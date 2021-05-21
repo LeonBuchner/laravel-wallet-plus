@@ -24,7 +24,7 @@ class Wallet extends Model
     {
         return $this->belongsTo(WalletType::class);
     }
-    
+
     public function walletLedgers()
     {
         return $this->hasMany(WalletLedger::class);
@@ -44,12 +44,12 @@ class Wallet extends Model
      * @return Wallet
      * @throws Exception
      */
-    public function incrementBalance($transaction)
+    public function incrementBalance($transaction, $transaction_type = null)
     {
         if (is_numeric($transaction)) {
             $amount = $this->convertToWalletTypeInteger($transaction);
             $this->increment('raw_balance', $amount);
-            $this->createWalletLedgerEntry($amount, $this->raw_balance);
+            $this->createWalletLedgerEntry($amount, $this->raw_balance, $transaction_type);
 
             return $this;
         }
@@ -71,12 +71,12 @@ class Wallet extends Model
      * @return Wallet
      * @throws Exception
      */
-    public function decrementBalance($transaction)
+    public function decrementBalance($transaction, $transaction_type = null)
     {
         if (is_numeric($transaction)) {
             $amount = $this->convertToWalletTypeInteger($transaction);
             $this->decrement('raw_balance', $amount);
-            $this->createWalletLedgerEntry($amount, $this->raw_balance, 'decrement');
+            $this->createWalletLedgerEntry($amount, $this->raw_balance, 'decrement', $transaction_type);
 
             return $this;
         }
@@ -100,7 +100,7 @@ class Wallet extends Model
      * @return mixed
      * @throws Exception
      */
-    private function createWalletLedgerEntry($transaction, $newRunningRawBalance, $type = 'increment')
+    private function createWalletLedgerEntry($transaction, $newRunningRawBalance, $transaction_type = null, $type = 'increment')
     {
         if (is_numeric($transaction)) {
             if ($type === 'decrement') {
@@ -110,6 +110,7 @@ class Wallet extends Model
             return WalletLedger::query()->create([
                 'wallet_id' => $this->id,
                 'amount' => $transaction,
+                'transaction_type' => $transaction_type,
                 'running_raw_balance' => $newRunningRawBalance,
             ]);
         }
